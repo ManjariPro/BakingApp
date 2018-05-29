@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">BakingApp</string>
+    <string name="appwidget_text">NO BAKES</string>
+    <string name="Ingredients_Head">Ingredients</string>
+    <string name="MainActivityTitle">Baking App</string>
+</resources>
