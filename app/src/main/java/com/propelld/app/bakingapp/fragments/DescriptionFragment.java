@@ -30,10 +30,12 @@ import com.propelld.app.bakingapp.utils.StringUtils;
 public class DescriptionFragment extends Fragment
 {
     private final String STEP_SAVED_INSTANCE = "STEP_SAVED_INSTANCE";
+    private final String POSITION_SAVED = "POSITION_SAVED";
     private final String APPLICATION_NAME = "BAKING_APPLICATION";
     private SimpleExoPlayer simpleExoPlayer;
     private SimpleExoPlayerView simpleExoPlayerView;
     private Step step;
+    private long currentVideoPosition;
 
     public DescriptionFragment()
     {
@@ -50,20 +52,73 @@ public class DescriptionFragment extends Fragment
     {
         super.onSaveInstanceState(state);
         state.putSerializable(STEP_SAVED_INSTANCE, step);
+        state.putLong(POSITION_SAVED, Math.max(0, currentVideoPosition));
     }
 
     @Override
-    public void onDestroy()
+    public void onPause()
     {
-        super.onDestroy();
-        releasePlayer();
+        super.onPause();
+        if (Util.SDK_INT <= 23)
+        {
+            releasePlayer();
+        }
     }
 
     @Override
-    public void onDetach()
+    public void onStop()
     {
-        super.onDetach();
-        releasePlayer();
+        super.onStop();
+        if (Util.SDK_INT > 23)
+        {
+            releasePlayer();
+        }
+    }
+
+    @Override
+    public void onStart()
+    {
+        super.onStart();
+        if (Util.SDK_INT > 23)
+        {
+            String url = !StringUtils.isNullOrWhiteSpace(step.getVideoURL())
+                    ? step.getVideoURL()
+                    : step.getThumbnailURL();
+
+            if (!StringUtils.isNullOrWhiteSpace(url))
+            {
+                Uri uri = Uri.parse(url);
+                simpleExoPlayerView.setVisibility(View.VISIBLE);
+                initializePlayer(uri);
+            }
+            else
+            {
+                simpleExoPlayerView.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if ((Util.SDK_INT <= 23 || simpleExoPlayer == null))
+        {
+            String url = !StringUtils.isNullOrWhiteSpace(step.getVideoURL())
+                    ? step.getVideoURL()
+                    : step.getThumbnailURL();
+
+            if (!StringUtils.isNullOrWhiteSpace(url))
+            {
+                Uri uri = Uri.parse(url);
+                simpleExoPlayerView.setVisibility(View.VISIBLE);
+                initializePlayer(uri);
+            }
+            else
+            {
+                simpleExoPlayerView.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override
@@ -80,6 +135,7 @@ public class DescriptionFragment extends Fragment
                 (savedInstanceState.getSerializable(STEP_SAVED_INSTANCE) != null))
         {
             step = (Step)savedInstanceState.getSerializable(STEP_SAVED_INSTANCE);
+            currentVideoPosition = savedInstanceState.getLong(POSITION_SAVED);
         }
 
         descTextView.setText(step.getDescription());
@@ -89,21 +145,6 @@ public class DescriptionFragment extends Fragment
         simpleExoPlayerView.setDefaultArtwork(BitmapFactory.decodeResource
                 (getResources(), R.drawable.novideo));
 
-        String url = !StringUtils.isNullOrWhiteSpace(step.getVideoURL())
-                ? step.getVideoURL()
-                : step.getThumbnailURL();
-
-        if (!StringUtils.isNullOrWhiteSpace(url))
-        {
-            Uri uri = Uri.parse(url);
-            simpleExoPlayerView.setVisibility(View.VISIBLE);
-            releasePlayer();
-            initializePlayer(uri);
-        }
-        else
-        {
-            simpleExoPlayerView.setVisibility(View.GONE);
-        }
         return rootView;
     }
 
@@ -124,6 +165,7 @@ public class DescriptionFragment extends Fragment
                     null);
 
             simpleExoPlayer.prepare(mediaSource);
+            simpleExoPlayer.seekTo(currentVideoPosition);
             simpleExoPlayer.setPlayWhenReady(true);
         }
     }
@@ -132,6 +174,7 @@ public class DescriptionFragment extends Fragment
     {
         if (simpleExoPlayer != null)
         {
+            currentVideoPosition = simpleExoPlayer.getCurrentPosition();
             simpleExoPlayer.stop();
             simpleExoPlayer.release();
             simpleExoPlayer = null;
