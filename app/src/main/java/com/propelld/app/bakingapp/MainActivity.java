@@ -175,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
             if (recyclerView != null)
             {
                 recyclerView.setVisibility(View.VISIBLE);
+                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             }
             else
             {
@@ -182,7 +183,6 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
             }
             isRecyclerViewVisible = true;
             setTitle(R.string.MainActivityTitle);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         }
     }
 
