@@ -1,12 +1,17 @@
 package com.propelld.app.bakingapp.fragments;
 
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -20,8 +25,10 @@ import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+import com.propelld.app.bakingapp.MainActivity;
 import com.propelld.app.bakingapp.R;
 import com.propelld.app.bakingapp.models.Step;
+import com.propelld.app.bakingapp.tasks.ThumbnailTask;
 import com.propelld.app.bakingapp.utils.StringUtils;
 
 /**
@@ -31,15 +38,19 @@ public class DescriptionFragment extends Fragment
 {
     private final String STEP_SAVED_INSTANCE = "STEP_SAVED_INSTANCE";
     private final String POSITION_SAVED = "POSITION_SAVED";
+    private final String STATE_SAVED = "STATE_SAVED";
+    private final String BITMAP_IMAGE = "BITMAP_IMAGE";
     private final String APPLICATION_NAME = "BAKING_APPLICATION";
     private SimpleExoPlayer simpleExoPlayer;
     private SimpleExoPlayerView simpleExoPlayerView;
+    private ImageView imageView;
     private Step step;
     private long currentVideoPosition;
+    private boolean currentIsPlaying = true;
+    private Bitmap bitmapImage;
 
     public DescriptionFragment()
     {
-        // Required empty public constructor
     }
 
     public void setStep(Step step)
@@ -51,8 +62,19 @@ public class DescriptionFragment extends Fragment
     public void onSaveInstanceState(Bundle state)
     {
         super.onSaveInstanceState(state);
+        saveState();
         state.putSerializable(STEP_SAVED_INSTANCE, step);
         state.putLong(POSITION_SAVED, Math.max(0, currentVideoPosition));
+        state.putBoolean(STATE_SAVED, currentIsPlaying);
+
+        Bitmap bitmapImage = null;
+
+        if (imageView.getDrawable() != null)
+        {
+            BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
+            bitmapImage = drawable.getBitmap();
+        }
+        state.putParcelable(BITMAP_IMAGE, bitmapImage);
     }
 
     @Override
@@ -83,7 +105,7 @@ public class DescriptionFragment extends Fragment
         {
             String url = !StringUtils.isNullOrWhiteSpace(step.getVideoURL())
                     ? step.getVideoURL()
-                    : step.getThumbnailURL();
+                    : null;
 
             if (!StringUtils.isNullOrWhiteSpace(url))
             {
@@ -106,7 +128,7 @@ public class DescriptionFragment extends Fragment
         {
             String url = !StringUtils.isNullOrWhiteSpace(step.getVideoURL())
                     ? step.getVideoURL()
-                    : step.getThumbnailURL();
+                    : null;
 
             if (!StringUtils.isNullOrWhiteSpace(url))
             {
@@ -126,16 +148,45 @@ public class DescriptionFragment extends Fragment
                              ViewGroup container,
                              Bundle savedInstanceState)
     {
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         // Inflate the layout for this fragment
         View rootView = inflater
                 .inflate(R.layout.fragment_description, container, false);
         TextView descTextView = (TextView) rootView.findViewById(R.id.desc_text);
+        imageView = (ImageView) rootView.findViewById(R.id.desc_imageView);
 
         if (savedInstanceState != null &&
                 (savedInstanceState.getSerializable(STEP_SAVED_INSTANCE) != null))
         {
             step = (Step)savedInstanceState.getSerializable(STEP_SAVED_INSTANCE);
             currentVideoPosition = savedInstanceState.getLong(POSITION_SAVED);
+            currentIsPlaying = savedInstanceState.getBoolean(STATE_SAVED);
+            bitmapImage = savedInstanceState.getParcelable(BITMAP_IMAGE);
+        }
+
+        ((AppCompatActivity)getActivity()).setTitle(step.getShortDescription());
+
+        if (!StringUtils.isNullOrWhiteSpace(step.getThumbnailURL()))
+        {
+            imageView.setVisibility(View.VISIBLE);
+            if (bitmapImage == null)
+            {
+                new ThumbnailTask(imageView,
+                        getContext(),
+                        MediaStore.Video.Thumbnails.MINI_KIND,
+                        (MainActivity)getActivity(),
+                        step)
+                        .execute(step.getThumbnailURL());
+            }
+            else
+            {
+                imageView.setImageBitmap(bitmapImage);
+            }
+        }
+        else
+        {
+            imageView.setVisibility(View.GONE);
         }
 
         descTextView.setText(step.getDescription());
@@ -166,7 +217,7 @@ public class DescriptionFragment extends Fragment
 
             simpleExoPlayer.prepare(mediaSource);
             simpleExoPlayer.seekTo(currentVideoPosition);
-            simpleExoPlayer.setPlayWhenReady(true);
+            simpleExoPlayer.setPlayWhenReady(currentIsPlaying);
         }
     }
 
@@ -175,9 +226,19 @@ public class DescriptionFragment extends Fragment
         if (simpleExoPlayer != null)
         {
             currentVideoPosition = simpleExoPlayer.getCurrentPosition();
+            currentIsPlaying = simpleExoPlayer.getPlayWhenReady();
             simpleExoPlayer.stop();
             simpleExoPlayer.release();
             simpleExoPlayer = null;
+        }
+    }
+
+    private void saveState()
+    {
+        if (simpleExoPlayer != null)
+        {
+            currentVideoPosition = simpleExoPlayer.getCurrentPosition();
+            currentIsPlaying = simpleExoPlayer.getPlayWhenReady();
         }
     }
 }

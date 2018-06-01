@@ -1,16 +1,20 @@
 package com.propelld.app.bakingapp.adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import com.propelld.app.bakingapp.R;
 import com.propelld.app.bakingapp.models.Step;
+import com.propelld.app.bakingapp.tasks.TaskListener;
+import com.propelld.app.bakingapp.tasks.ThumbnailTask;
 import com.propelld.app.bakingapp.utils.StringUtils;
-
 import java.util.ArrayList;
 
 /**
@@ -22,26 +26,31 @@ public class BakingStepsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     ArrayList<Step> steps;
     private Context context;
     private OnStepClick onStepClick;
+    private TaskListener taskListener;
     private final int NOVIDEO = 0;
     private final int VIDEO = 1;
 
     public BakingStepsAdapter(Context context,
                               ArrayList<Step> steps,
-                              OnStepClick onStepClick)
+                              OnStepClick onStepClick,
+                              TaskListener taskListener)
     {
         this.context = context;
         this.steps = steps;
         this.onStepClick = onStepClick;
+        this.taskListener = taskListener;
     }
 
     public  class BakingStepsNoVideoViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener
     {
         TextView txtShortDescription;
+        ImageView imageView;
 
         public BakingStepsNoVideoViewHolder(View view)
         {
             super(view);
             txtShortDescription = (TextView) view.findViewById(R.id.txt_step_shortDescription);
+            imageView = (ImageView) view.findViewById(R.id.step_imageView);
             view.setOnClickListener(this);
         }
 
@@ -147,10 +156,29 @@ public class BakingStepsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         holder.txtShortDescription.setText(step.getShortDescription());
     }
 
-    private void bindWithNoVideoViewHolder(BakingStepsNoVideoViewHolder holder,
+    private void bindWithNoVideoViewHolder(final BakingStepsNoVideoViewHolder holder,
                                            int position)
     {
-        Step step = steps.get(position);
+        final Step step = steps.get(position);
         holder.txtShortDescription.setText(step.getShortDescription());
+        if (!StringUtils.isNullOrWhiteSpace(step.getThumbnailURL()))
+        {
+            holder.imageView.setVisibility(View.VISIBLE);
+
+            if (step.getThumbnail() != null)
+            {
+                holder.imageView.setImageBitmap(Bitmap.createScaledBitmap(
+                        step.getThumbnail(), 96, 96, false));
+            }
+            else
+            {
+                new ThumbnailTask(holder.imageView,
+                        context,
+                        MediaStore.Video.Thumbnails.MICRO_KIND,
+                        taskListener,
+                        step)
+                        .execute(step.getThumbnailURL());
+            }
+        }
     }
 }

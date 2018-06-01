@@ -26,15 +26,24 @@ public class BakingTask extends AsyncTask <String, Void, String>
 {
     private ArrayList<Baking> bakings;
     private OnTaskCompleted onCompleted;
+    private TaskListener taskListener;
     private final BakingIdlingResource idlingResource;
 
     public BakingTask(ArrayList<Baking> bakings,
                       OnTaskCompleted onCompleted,
+                      TaskListener taskListener,
                       @Nullable final BakingIdlingResource idlingResource)
     {
         this.bakings = bakings;
         this.onCompleted = onCompleted;
         this.idlingResource = idlingResource;
+        this.taskListener = taskListener;
+    }
+
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+        taskListener.onTaskStarted();
     }
 
     @Override
@@ -62,7 +71,6 @@ public class BakingTask extends AsyncTask <String, Void, String>
             {
                 stringBuilder.append(line);
             }
-
         }
         catch (MalformedURLException e)
         {
@@ -162,7 +170,7 @@ public class BakingTask extends AsyncTask <String, Void, String>
             }
 
             onCompleted.onTaskCompleted();
-
+            taskListener.onTaskFinished();
             if (idlingResource != null)
             {
                 idlingResource.setIdleState(true);

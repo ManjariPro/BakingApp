@@ -1,5 +1,6 @@
 package com.propelld.app.bakingapp.models;
 
+import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 import java.io.Serializable;
@@ -15,6 +16,7 @@ public class Step implements Parcelable, Serializable
     private String description;
     private String videoURL;
     private String thumbnailURL;
+    private Bitmap thumbnail;
 
     public int getId()
     {
@@ -66,6 +68,16 @@ public class Step implements Parcelable, Serializable
         this.thumbnailURL = thumbnailURL;
     }
 
+    public Bitmap getThumbnail()
+    {
+        return thumbnail;
+    }
+
+    public void setThumbnail(Bitmap thumbnail)
+    {
+        this.thumbnail = thumbnail;
+    }
+
     public Step()
     {
     }
@@ -77,6 +89,7 @@ public class Step implements Parcelable, Serializable
         description = parcel.readString();
         videoURL = parcel.readString();
         thumbnailURL = parcel.readString();
+        thumbnail = parcel.readParcelable(Bitmap.class.getClassLoader());
     }
 
     @Override
@@ -93,6 +106,7 @@ public class Step implements Parcelable, Serializable
         dest.writeString(description);
         dest.writeString(videoURL);
         dest.writeString(thumbnailURL);
+        dest.writeValue(thumbnail);
     }
 
     public static Creator<Step> CREATOR = new Creator<Step>()

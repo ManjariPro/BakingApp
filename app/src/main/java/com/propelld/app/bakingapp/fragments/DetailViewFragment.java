@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -19,6 +20,7 @@ import com.propelld.app.bakingapp.adapters.BakingStepsAdapter;
 import com.propelld.app.bakingapp.adapters.OnStepClick;
 import com.propelld.app.bakingapp.models.Baking;
 import com.propelld.app.bakingapp.models.Ingredient;
+import com.propelld.app.bakingapp.tasks.TaskListener;
 import java.util.ArrayList;
 
 public class DetailViewFragment extends Fragment
@@ -54,6 +56,7 @@ public class DetailViewFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState)
     {
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         View rootView = inflater.inflate(R.layout.fragment_detail_view, container, false);
 
         TextView headingTextView = (TextView) rootView.findViewById(R.id.details_ingredientHeading);
@@ -65,12 +68,13 @@ public class DetailViewFragment extends Fragment
         {
             baking = (Baking)savedInstanceState.getSerializable(BAKING_SAVED_INSTANCE);
         }
+        ((AppCompatActivity)getActivity()).setTitle(baking.getName());
 
         ingredientsTextView.setText(getIngredients(baking.getIngredients()));
 
         RecyclerView recyclerView = (RecyclerView)rootView.findViewById(R.id.details_steps);
         BakingStepsAdapter bakingStepsAdapter =
-                new BakingStepsAdapter(getContext(), baking.getSteps(), onStepClick);
+                new BakingStepsAdapter(getContext(), baking.getSteps(), onStepClick, (TaskListener) getActivity());
         recyclerView
                 .setLayoutManager(new LinearLayoutManager(getContext(),
                         LinearLayoutManager.VERTICAL,

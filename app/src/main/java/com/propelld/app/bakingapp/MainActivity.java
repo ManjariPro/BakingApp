@@ -1,5 +1,6 @@
 package com.propelld.app.bakingapp;
 
+import android.app.ProgressDialog;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.MenuItem;
 import android.view.View;
 import com.propelld.app.bakingapp.adapters.BakingAdapter;
 import com.propelld.app.bakingapp.adapters.OnBakingRecipeClick;
@@ -21,9 +23,10 @@ import com.propelld.app.bakingapp.models.Baking;
 import com.propelld.app.bakingapp.models.Step;
 import com.propelld.app.bakingapp.tasks.BakingTask;
 import com.propelld.app.bakingapp.tasks.OnTaskCompleted;
+import com.propelld.app.bakingapp.tasks.TaskListener;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements OnTaskCompleted, OnBakingRecipeClick, OnStepClick
+public class MainActivity extends AppCompatActivity implements OnTaskCompleted, OnBakingRecipeClick, OnStepClick, TaskListener
 {
     private ArrayList<Baking> bakings;
     private RecyclerView recyclerView;
@@ -37,6 +40,9 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
     private final String STEPS_TAG  = "STEPS";
     private final String BAKING_SAVED_INSTANCE = "BAKING_SAVED_INSTANCE";
     private final String RECYCLERVIEW_VISIBLE = "RECYCLERVIEW_VISIBLE";
+
+    private ProgressDialog progressDialog;
+    private boolean isTaskRunning = false;
     
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -65,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
         }
         else
         {
-            BakingTask task = new BakingTask(bakings, this, mIdlingResource);
+            BakingTask task = new BakingTask(bakings, this,this, mIdlingResource);
             task.execute(Configuration.url);
         }
 
@@ -121,8 +127,6 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
             recyclerViewTab.setVisibility(View.GONE);
         }
         isRecyclerViewVisible = false;
-        // set the title as the recipe
-        setTitle(baking.getName());
         // Now launch the fragment to show the details...
         DetailViewFragment fragment = new DetailViewFragment();
         fragment.setBaking(baking);
@@ -178,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
             }
             isRecyclerViewVisible = true;
             setTitle(R.string.MainActivityTitle);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         }
     }
 
@@ -190,5 +195,44 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted, 
             mIdlingResource = new BakingIdlingResource();
         }
         return mIdlingResource;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch (item.getItemId())
+        {
+            case  android.R.id.home:
+                onBackPressed();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onTaskStarted()
+    {
+        isTaskRunning = true;
+        progressDialog = ProgressDialog.show(this, "Loading", "Please wait a moment!");
+    }
+
+    @Override
+    public void onTaskFinished()
+    {
+        if (progressDialog != null)
+        {
+            progressDialog.dismiss();
+        }
+    }
+
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        if (progressDialog != null && progressDialog.isShowing())
+        {
+            progressDialog.dismiss();
+        }
     }
 }

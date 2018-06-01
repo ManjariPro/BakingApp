@@ -1,13 +1,18 @@
 package com.propelld.app.bakingapp.adapters;
 
 import android.content.Context;
+import android.media.Image;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import com.propelld.app.bakingapp.R;
 import com.propelld.app.bakingapp.models.Baking;
+import com.propelld.app.bakingapp.utils.StringUtils;
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
 
 /**
@@ -32,11 +37,13 @@ public class BakingAdapter extends RecyclerView.Adapter<BakingAdapter.BakingView
     public  class BakingViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener
     {
         TextView txtRecipe;
+        ImageView imageView;
 
         public BakingViewHolder(View view)
         {
             super(view);
             txtRecipe = (TextView) view.findViewById(R.id.receipeName);
+            imageView = (ImageView) view.findViewById(R.id.baking_image);
             view.setOnClickListener(this);
         }
 
@@ -70,6 +77,13 @@ public class BakingAdapter extends RecyclerView.Adapter<BakingAdapter.BakingView
     {
         Baking baking = bakings.get(position);
         holder.txtRecipe.setText(baking.getName());
+
+        if (!StringUtils.isNullOrWhiteSpace(baking.getImage()))
+        {
+            Picasso.with(context)
+                    .load(baking.getImage())
+                    .into(holder.imageView);
+        }
     }
 
     @Override

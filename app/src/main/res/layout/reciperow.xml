@@ -23,6 +23,11 @@
         android:textSize="40sp"
         android:id="@+id/receipeName"/>
 
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/baking_image"/>
+
     </android.support.v7.widget.CardView>
 
 </LinearLayout>
